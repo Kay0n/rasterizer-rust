@@ -1,15 +1,16 @@
-use crate::math::vectors::*;
-pub struct SimpleRng {
+use crate::{Vec2, vec2};
+
+pub struct Random {
     state: u32,
 }
 
-impl SimpleRng {
+impl Random {
     pub fn new(seed: u32) -> Self {
         Self { state: seed }
     }
 
     pub fn next_u32(&mut self) -> u32 {
-        // Linear Congruential Generator constants
+        // Linear Congruential Generator constants  
         self.state = self.state.wrapping_mul(1103515245).wrapping_add(12345);
         self.state
     }

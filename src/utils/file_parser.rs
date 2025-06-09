@@ -1,72 +1,13 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-
-use crate::math::vectors::*;
-use crate::math::rng::*;
-
-
-
-pub struct Model {
-    pub points: Vec<Vec3>,
-    pub colors: Vec<u32>,
-    pub transform: Transform
-}
+use crate::Model;
+use crate::{Vec3, vec3};
+use crate::Random;
+use crate::Transform;
 
 
 
-pub struct Transform {
-    pub yaw: f32,
-    pub pitch: f32,
-    pub position: Vec3,
-}
-
-
-
-impl Transform {
-    pub fn new(yaw: f32, pitch:f32, position:Vec3) -> Transform{
-        return Transform { yaw, pitch, position }
-    }
-
-
-    fn get_basis_vectors(&self) -> (Vec3, Vec3, Vec3) {
-
-        let yaw_rad = self.yaw.to_radians();
-        let pitch_rad = self.pitch.to_radians();
-
-        let ihat_yaw = vec3!(yaw_rad.cos(), 0.0, -yaw_rad.sin());
-        let jhat_yaw = vec3!(0.0, 1.0, 0.0); // No change needed here
-        let khat_yaw = vec3!(yaw_rad.sin(), 0.0, yaw_rad.cos());
-
-        let ihat_pitch = vec3!(1, 0, 0);
-        let jhat_pitch = vec3!(0, pitch_rad.cos(), -pitch_rad.sin());
-        let khat_pitch = vec3!(0, pitch_rad.sin(), pitch_rad.cos());
-
-        let ihat = transform_vector(ihat_yaw, jhat_yaw, khat_yaw, ihat_pitch);
-        let jhat = transform_vector(ihat_yaw, jhat_yaw, khat_yaw, jhat_pitch);
-        let khat = transform_vector(ihat_yaw, jhat_yaw, khat_yaw, khat_pitch);
-
-        return (ihat, jhat, khat);
-    }
-
-
-    pub fn to_world_point(&self, point: Vec3) -> Vec3 {
-        let (ihat, jhat, khat) = self.get_basis_vectors();
-        return transform_vector(ihat, jhat, khat, point) + self.position;
-    }
-
-    
-}
-
-
-
-fn transform_vector(ihat: Vec3, jhat: Vec3, khat: Vec3, vector: Vec3) -> Vec3 {
-    return ihat * vector.x  + jhat * vector.y + khat * vector.z;
-}
-
-
-
-// loads .obj files into models
-pub fn get_model(obj_file_path: &str) -> Model{
+pub fn parse_obj(obj_file_path: &str) -> Model {
     let file = File::open(obj_file_path).expect("Unable to open file");
     let reader = BufReader::new(file);
     
@@ -111,7 +52,7 @@ pub fn get_model(obj_file_path: &str) -> Model{
     }
 
     // random tri colors
-    let mut rng = SimpleRng::new(423435);
+    let mut rng = Random::new(4676319);
     let num_triangles = triangulated_points.len() / 3;
     let mut tri_colors: Vec<u32> = Vec::with_capacity(num_triangles);
     for _ in 0..num_triangles {
@@ -121,10 +62,16 @@ pub fn get_model(obj_file_path: &str) -> Model{
     Model {
         points: triangulated_points,
         colors: tri_colors, 
-        transform: Transform::new(0.0, 0.0, vec3!(0,0,0))
+        transform: Transform::new()
     }
 }
 
+
+// fn parse_faces(){
+
+// }
+
+// fn parse_points()
 
 
 // fan algorithm, TODO: earclipping
@@ -141,8 +88,8 @@ fn triangulate_face(polygon: &[Vec3]) -> Vec<Vec3> {
         triangles.push(polygon[i]);
         triangles.push(polygon[i + 1]);
     }
-    
-    return triangles
+
+    return triangles;
 }
 
 
