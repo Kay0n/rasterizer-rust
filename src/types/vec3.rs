@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, Mul, Div};
+use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign};
 
 
 
@@ -75,6 +75,21 @@ impl Div for Vec3 {
         vec3!(self.x / other.x, self.y / other.y, self.z / other.z)
     }
 }
+impl AddAssign for Vec3 {
+    fn add_assign(&mut self, other: Vec3) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
+    }
+}
+impl SubAssign for Vec3 {
+    fn sub_assign(&mut self, other: Vec3) {
+        self.x -= other.x;
+        self.y -= other.y;
+        self.z -= other.z;
+    }
+}
+
 
 
 impl Vec3 {
@@ -92,6 +107,9 @@ impl Vec3 {
             return Vec3 { x: self.x / len, y: self.y / len, z: self.z / len };
         }
         self
+    }
+    pub fn dot(self, other: Self) -> f32 {
+        self.x * other.x + self.y * other.y + self.z * other.z
     }
 }
 
