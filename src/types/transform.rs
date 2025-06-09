@@ -19,7 +19,7 @@ impl Transform {
     }
 
 
-    fn get_basis_vectors(&self) -> (Vec3, Vec3, Vec3) {
+    pub fn get_basis_vectors(&self) -> (Vec3, Vec3, Vec3) {
 
         let yaw_rad = self.yaw.to_radians();
         let pitch_rad = self.pitch.to_radians();
@@ -39,10 +39,25 @@ impl Transform {
         return (ihat, jhat, khat);
     }
 
+    fn get_inverse_basis_vectors(&self) -> (Vec3, Vec3, Vec3) {
+        let (ihat, jhat, khat) = self.get_basis_vectors();
+        return (
+            vec3!(ihat.x, jhat.x, khat.x),
+            vec3!(ihat.y, jhat.y, khat.y),
+            vec3!(ihat.z, jhat.z, khat.z),
+        );
+    }
+
 
     pub fn to_world_point(&self, point: Vec3) -> Vec3 {
         let (ihat, jhat, khat) = self.get_basis_vectors();
         return Self::transform_vector(ihat, jhat, khat, point) + self.position;
+    }
+
+
+    pub fn to_local_point(&self, world_point: Vec3) -> Vec3{
+        let (ihat, jhat, khat) = self.get_inverse_basis_vectors();
+        return Self::transform_vector(ihat, jhat, khat, world_point - self.position);
     }
 
     
