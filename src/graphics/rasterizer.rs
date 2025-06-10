@@ -44,12 +44,12 @@ impl Rasterizer {
         let frustum_planes = build_frustum_planes(scene.camera.fov, aspect, near_clip, far_clip);
 
         for model in &scene.models {
-            for i in (0..model.points.len()).step_by(3) {
+            for i in (0..model.vertices.len()).step_by(3) {
 
                 self.poly_buffer1.clear();
-                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.points[i])));
-                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.points[i + 1])));
-                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.points[i + 2])));
+                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.vertices[i])));
+                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.vertices[i + 1])));
+                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.vertices[i + 2])));
 
                 let mut input_poly = &mut self.poly_buffer1;
                 let mut output_poly = &mut self.poly_buffer2;

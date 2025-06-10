@@ -34,7 +34,7 @@ fn main() -> Result<()> {
     let mut monkey = parse_obj("./models/monkey.obj");
     
     let mut scene = Scene::new();
-    let mut renderer = Rasterizer::new();
+    let mut rasterizer = Rasterizer::new();
 
     let mut render_target: RenderTarget = RenderTarget::new(WIDTH, HEIGHT);
     let mut view = View::new(1920, 1080); // window size, not render res
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
             
         scene.update(delta_time, view);
 
-        renderer.render(&mut render_target, &scene);
+        rasterizer.render(&mut render_target, &scene);
         
         view.draw(&render_target);
 
@@ -63,7 +63,7 @@ fn main() -> Result<()> {
         println!("Frame time: {} ms", elapsed.as_millis());
 
     });
-    
+
     return Ok(());
 }
 
