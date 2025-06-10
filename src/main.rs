@@ -14,8 +14,11 @@ use graphics::camera::*;
 use graphics::scene::*;
 use types::model::*;
 use types::transform::*;
+use types::texture::*;
+use types::shader::*;
 use types::vec2::*;
 use types::vec3::*;
+use types::vertex::*;
 use utils::file_parser::*;
 use utils::random::*;
 use utils::view::*;
@@ -30,8 +33,10 @@ mod config;
 
 fn main() -> Result<()> {
 
-    let mut cube = parse_obj("./models/Tori.obj");
-    let mut monkey = parse_obj("./models/monkey.obj");
+    let mut cube = parse_obj("./models/poco-finalobj.obj");
+    // let cube_texture = read_bitmap("./models/uv_grid.001.bmp").expect("Failed to read texture bitmap");
+    // cube.shader = Box::new(TextureShader::new(cube_texture));
+    // let mut monkey = parse_obj("./models/monkey.obj");
     
     let mut scene = Scene::new();
     let mut rasterizer = Rasterizer::new();
@@ -41,10 +46,10 @@ fn main() -> Result<()> {
 
     let mut last_time = Instant::now();
 
-    cube.transform.position.z = -20.0;
-    monkey.transform.position.z = -5.0;
+    cube.transform.position.z = -5.0;
+    // monkey.transform.position.z = -5.0;
     scene.load_model(cube);
-    scene.load_model(monkey);
+    // scene.load_model(monkey);
     scene.camera.fov = 70.0;
 
     view.run(move |view| {

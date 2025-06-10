@@ -1,11 +1,12 @@
-use crate::{graphics::camera::Camera, vec2, vec3, Model, RenderTarget, Scene, Transform, Vec2, Vec3};
+use crate::{graphics::camera::Camera, types::vertex::Vertex, vec2, vec3, Model, RenderTarget, Scene, Transform, Vec2, Vec3};
 use std::simd::{f32x8, u32x8, Simd, Mask, prelude::SimdPartialEq, prelude::SimdPartialOrd};
 
 
+
 pub struct Rasterizer {
-    poly_buffer1: Vec<Vec3>,
-    poly_buffer2: Vec<Vec3>,
-    final_triangles: Vec<[Vec3; 3]>,
+    poly_buffer1: Vec<Vertex>,
+    poly_buffer2: Vec<Vertex>,
+    final_triangles: Vec<[Vertex; 3]>,
 
     frustum_planes: [Plane; 6],
     cached_fov: f32,
@@ -13,6 +14,7 @@ pub struct Rasterizer {
     cached_near: f32,
     cached_far: f32,
 }
+
 
 
 impl Rasterizer {
@@ -46,10 +48,26 @@ impl Rasterizer {
         for model in &scene.models {
             for i in (0..model.vertices.len()).step_by(3) {
 
+                let v0 = &model.vertices[i];
+                let v1 = &model.vertices[i + 1];
+                let v2 = &model.vertices[i + 2];
+
                 self.poly_buffer1.clear();
-                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.vertices[i])));
-                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.vertices[i + 1])));
-                self.poly_buffer1.push(scene.camera.transform.to_local_point(model.transform.to_world_point(model.vertices[i + 2])));
+                self.poly_buffer1.push(Vertex {
+                    position: scene.camera.transform.to_local_point(model.transform.to_world_point(v0.position)),
+                    texcoord: v0.texcoord,
+                    normal: scene.camera.transform.to_local_vector(model.transform.to_world_vector(v0.normal)),
+                });
+                self.poly_buffer1.push(Vertex {
+                    position: scene.camera.transform.to_local_point(model.transform.to_world_point(v1.position)),
+                    texcoord: v1.texcoord,
+                    normal: scene.camera.transform.to_local_vector(model.transform.to_world_vector(v1.normal)),
+                });
+                self.poly_buffer1.push(Vertex {
+                    position: scene.camera.transform.to_local_point(model.transform.to_world_point(v2.position)),
+                    texcoord: v2.texcoord,
+                    normal: scene.camera.transform.to_local_vector(model.transform.to_world_vector(v2.normal)),
+                });
 
                 let mut input_poly = &mut self.poly_buffer1;
                 let mut output_poly = &mut self.poly_buffer2;
@@ -67,25 +85,21 @@ impl Rasterizer {
                 if !input_poly.is_empty() {
                     self.final_triangles.clear();
                     triangulate_convex_polygon(input_poly, &mut self.final_triangles);
-    
-                    for triangle in &self.final_triangles {
-                        let a = self.vertex_to_screen(triangle[0], render_target, &scene.camera);
-                        let b = self.vertex_to_screen(triangle[1], render_target, &scene.camera);
-                        let c = self.vertex_to_screen(triangle[2], render_target, &scene.camera);
 
-                        self.draw_triangle(render_target, a, b, c, model.colors[i / 3]);
+                    for triangle in &self.final_triangles {
+                        self.draw_triangle(render_target, &triangle[0], &triangle[1], &triangle[2], model, &scene.camera, 0xFF00FF00);
+
+                        // self.draw_triangle(render_target, &triangle[0], &triangle[2], &triangle[1], model, &scene.camera, 0xFFFFFF00);
                         num_tris += 1
                     }
                 }
             }
         }
-        println!("Tri count: {}", num_tris);
+        // println!("Tri count: {}", num_tris);
     }
 
 
     fn vertex_to_screen(&self, vertex_view: Vec3, target: &mut RenderTarget, cam: &Camera) -> Vec3 {
-
-        // let vertex_view = cam.transform.to_local_point(vertex_world);
 
         let world_height = (cam.fov.to_radians() / 2.0).tan() * 2.0; // TODO: not run every time?
         let pixels_per_world_unit: f32 = (target.height as f32 / world_height) / -vertex_view.z;
@@ -97,11 +111,14 @@ impl Rasterizer {
     }
 
 
-    fn draw_triangle(&self, fb: &mut RenderTarget, p1: Vec3, p2: Vec3, p3: Vec3, color: u32) {
+    fn draw_triangle(&self, fb: &mut RenderTarget, v1: &Vertex, v2: &Vertex, v3: &Vertex, model: &Model, cam: &Camera, color: u32) {
+        let p1_screen = self.vertex_to_screen(v1.position, fb, cam);
+        let p2_screen = self.vertex_to_screen(v2.position, fb, cam);
+        let p3_screen = self.vertex_to_screen(v3.position, fb, cam);
 
-        let v1_2d = vec2!(p1.x, p1.y);
-        let v2_2d = vec2!(p2.x, p2.y);
-        let v3_2d = vec2!(p3.x, p3.y);
+        let v1_2d = vec2!(p1_screen.x, p1_screen.y);
+        let v2_2d = vec2!(p2_screen.x, p2_screen.y);
+        let v3_2d = vec2!(p3_screen.x, p3_screen.y);
           
         // calculate bounding box
         let min_x = v1_2d.x.min(v2_2d.x).min(v3_2d.x).floor().max(0.0) as u32;
@@ -142,20 +159,41 @@ impl Rasterizer {
             return;
         }
     
-        let inv_z1 = 1.0 / p1.z;
-        let inv_z2 = 1.0 / p2.z;
-        let inv_z3 = 1.0 / p3.z;
+        let inv_z1 = 1.0 / v1.position.z;
+        let inv_z2 = 1.0 / v2.position.z;
+        let inv_z3 = 1.0 / v3.position.z;
+
+        let uv1_over_z = v1.texcoord * inv_z1;
+        let uv2_over_z = v2.texcoord * inv_z2;
+        let uv3_over_z = v3.texcoord * inv_z3;
+
+        let n1_over_z = v1.normal * inv_z1;
+        let n2_over_z = v2.normal * inv_z2;
+        let n3_over_z = v3.normal * inv_z3;
 
         let simd_inv_z1 = f32x8::splat(inv_z1);
         let simd_inv_z2 = f32x8::splat(inv_z2);
         let simd_inv_z3 = f32x8::splat(inv_z3);
+
+        let simd_u1_over_z = f32x8::splat(uv1_over_z.x);
+        let simd_v1_over_z = f32x8::splat(uv1_over_z.y);
+        let simd_u2_over_z = f32x8::splat(uv2_over_z.x);
+        let simd_v2_over_z = f32x8::splat(uv2_over_z.y);
+        let simd_u3_over_z = f32x8::splat(uv3_over_z.x);
+        let simd_v3_over_z = f32x8::splat(uv3_over_z.y);
+
+        let simd_nx1_over_z = f32x8::splat(n1_over_z.x);
+        let simd_ny1_over_z = f32x8::splat(n1_over_z.y);
+        let simd_nz1_over_z = f32x8::splat(n1_over_z.z);
+        let simd_nx2_over_z = f32x8::splat(n2_over_z.x);
+        let simd_ny2_over_z = f32x8::splat(n2_over_z.y);
+        let simd_nz2_over_z = f32x8::splat(n2_over_z.z);
+        let simd_nx3_over_z = f32x8::splat(n3_over_z.x);
+        let simd_ny3_over_z = f32x8::splat(n3_over_z.y);
+        let simd_nz3_over_z = f32x8::splat(n3_over_z.z);
+
         let simd_area = f32x8::splat(area);
         let simd_one = f32x8::splat(1.0);
-        
-        // initial barycentric weights
-        let mut w0_row_start = self.edge(v2_2d, v3_2d, p_start);
-        let mut w1_row_start = self.edge(v3_2d, v1_2d, p_start);
-        let mut w2_row_start = self.edge(v1_2d, v2_2d, p_start);
 
         // raster loop
         for y in min_y..=max_y {
@@ -164,7 +202,7 @@ impl Rasterizer {
                 min_x as f32 + 0.5, min_x as f32 + 1.5, min_x as f32 + 2.5, min_x as f32 + 3.5,
                 min_x as f32 + 4.5, min_x as f32 + 5.5, min_x as f32 + 6.5, min_x as f32 + 7.5
             ]);
-            let simd_y = f32x8::splat(y as f32 + 0.5);
+            let simd_y: Simd<f32, 8> = f32x8::splat(y as f32 + 0.5);
     
             // simd weights
             let mut simd_w0 = self.edge_simd(f32x8::splat(v2_2d.x), f32x8::splat(v2_2d.y), f32x8::splat(v3_2d.x), f32x8::splat(v3_2d.y), simd_x, simd_y);
@@ -174,11 +212,12 @@ impl Rasterizer {
             // 8 pixels at a time
             for x in (min_x..=max_x).step_by(8) {
     
-                let mask = (simd_w0.simd_ge(f32x8::splat(0.0))) &
-                           (simd_w1.simd_ge(f32x8::splat(0.0))) &
-                           (simd_w2.simd_ge(f32x8::splat(0.0)));
+                let mask = 
+                    (simd_w0.simd_ge(f32x8::splat(0.0))) &
+                    (simd_w1.simd_ge(f32x8::splat(0.0))) &
+                    (simd_w2.simd_ge(f32x8::splat(0.0)));
     
-                // if any pixels in triangle
+                // if any pixels in triangle, implicite backface cull
                 if mask.any() {
                     let index_start = (y * fb.width + x) as usize;
     
@@ -192,15 +231,47 @@ impl Rasterizer {
                     let simd_current_depth = f32x8::from_slice(&current_depth);
                     
                     let new_depth_mask = mask & depth.simd_gt(simd_current_depth);
-                    
+
                     if new_depth_mask.any() {
+
+                        let u_over_z_interp = (simd_w0 * simd_u1_over_z + simd_w1 * simd_u2_over_z + simd_w2 * simd_u3_over_z) / simd_area;
+                        let v_over_z_interp = (simd_w0 * simd_v1_over_z + simd_w1 * simd_v2_over_z + simd_w2 * simd_v3_over_z) / simd_area;
+
+                        let tex_u = u_over_z_interp * depth;
+                        let tex_v = v_over_z_interp * depth;
+
+                        let nx_over_z_interp = (simd_w0 * simd_nx1_over_z + simd_w1 * simd_nx2_over_z + simd_w2 * simd_nx3_over_z) / simd_area; 
+                        let ny_over_z_interp = (simd_w0 * simd_ny1_over_z + simd_w1 * simd_ny2_over_z + simd_w2 * simd_ny3_over_z) / simd_area;
+                        let nz_over_z_interp = (simd_w0 * simd_nz1_over_z + simd_w1 * simd_nz2_over_z + simd_w2 * simd_nz3_over_z) / simd_area;
+    
+                        let normal_x = nx_over_z_interp * depth;
+                        let normal_y = ny_over_z_interp * depth;
+                        let normal_z = nz_over_z_interp * depth;
+                        
                         for i in 0..8 {
                             if new_depth_mask.test(i) {
                                 let current_x = x + i as u32;
                                 if current_x <= max_x {
                                     let index = index_start + i;
+
                                     fb.depth_buffer[index] = depth[i];
-                                    fb.set_pixel(current_x, y, color);
+
+                                    let texcoord = vec2!(tex_u[i], tex_v[i]);
+
+                                    let interpolated_normal = vec3!(normal_x[i], normal_y[i], normal_z[i]); 
+
+                                    let normal = interpolated_normal.normalize();
+
+
+                                    // let normalized_depth = (depth[i] - -20.0) / (-0.1 - -20.0);
+                                    // let grayscale_u8 = (255.0 * (1.0 - normalized_depth)).round() as u8;                                   
+                                    // let grey_depth = 
+                                    //     (0xFF000000) |      
+                                    //     ((grayscale_u8 as u32) << 16) | 
+                                    //     ((grayscale_u8 as u32) << 8) |
+                                    //     (grayscale_u8 as u32);
+                                    // fb.color_buffer[index] = grey_depth;
+                                    fb.color_buffer[index] = model.shader.pixel_color(texcoord, normal);
                                 }
                             }
                         }
@@ -214,7 +285,7 @@ impl Rasterizer {
             }
         }
     }
-    
+
 
     // signed area func
     #[inline]
@@ -271,32 +342,34 @@ fn build_frustum_planes(fov: f32, aspect: f32, near: f32, far: f32) -> [Plane; 6
 
 
 
-fn clip_polygon_against_plane(input_poly: &[Vec3], output_poly: &mut Vec<Vec3>, plane: &Plane) {
+fn clip_polygon_against_plane(input_poly: &[Vertex], output_poly: &mut Vec<Vertex>, plane: &Plane) {
     output_poly.clear();
-
     if input_poly.is_empty() {
         return;
     }
 
-    let mut prev_v = *input_poly.last().unwrap();
-    let mut prev_dist = plane.distance(prev_v);
+    let mut prev_v = input_poly.last().unwrap();
+    let mut prev_dist = plane.distance(prev_v.position);
 
-    for &curr_v in input_poly {
-        let curr_dist = plane.distance(curr_v);
+    for curr_v in input_poly {
+        let curr_dist = plane.distance(curr_v.position);
 
         let prev_inside = prev_dist >= 0.0;
         let curr_inside = curr_dist >= 0.0;
 
-        // if edge crosses plane, add intersection point
         if prev_inside != curr_inside {
             let t = prev_dist / (prev_dist - curr_dist);
-            let intersection = prev_v + (curr_v - prev_v) * t;
+
+            let intersection = Vertex {
+                position: prev_v.position + (curr_v.position - prev_v.position) * t,
+                texcoord: prev_v.texcoord + (curr_v.texcoord - prev_v.texcoord) * t,
+                normal: prev_v.normal + (curr_v.normal - prev_v.normal) * t,
+            };
             output_poly.push(intersection);
         }
 
-        // if vertex inside plane
         if curr_inside {
-            output_poly.push(curr_v);
+            output_poly.push(Vertex { ..*curr_v });
         }
 
         prev_v = curr_v;
@@ -306,7 +379,7 @@ fn clip_polygon_against_plane(input_poly: &[Vec3], output_poly: &mut Vec<Vec3>, 
 
 
 
-fn triangulate_convex_polygon(polygon: &[Vec3], triangles: &mut Vec<[Vec3; 3]>) {
+fn triangulate_convex_polygon(polygon: &[Vertex], triangles: &mut Vec<[Vertex; 3]>) {
     if polygon.len() < 3 {
         return;
     }
@@ -316,5 +389,4 @@ fn triangulate_convex_polygon(polygon: &[Vec3], triangles: &mut Vec<[Vec3; 3]>) 
         triangles.push([v0, polygon[i], polygon[i + 1]]);
     }
 }
-
 

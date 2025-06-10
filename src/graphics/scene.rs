@@ -49,13 +49,14 @@ impl Scene {
     
         if view.is_focused {
             let mouse_delta = (view.mouse_delta() / WIDTH as f32) * MOUSE_SENSITIVITY;
-            self.camera.transform.pitch = (self.camera.transform.pitch + mouse_delta.y)
+            let pitch = (self.camera.transform.pitch + mouse_delta.y)
                 .clamp(-85.0, 85.0);
-            self.camera.transform.yaw -= mouse_delta.x;
-        }
+            let yaw = self.camera.transform.yaw - mouse_delta.x;
+            self.camera.transform.set_rotation(pitch, yaw);
+        }   
     
         let mut camera_delta = vec3!(0,0,0);
-        let (cam_right, cam_up, cam_fwd) = self.camera.transform.get_basis_vectors();
+        let (cam_right, cam_up, cam_fwd) = self.camera.transform.basis_vectors;
     
         if view.key_held(KeyCode::KeyW) {camera_delta -= cam_fwd}
         if view.key_held(KeyCode::KeyA) {camera_delta -= cam_right}
