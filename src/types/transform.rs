@@ -3,11 +3,15 @@ use crate::{
     vec3,Vec3
 };
 
+
+
 pub struct Transform {
     pub yaw: f32,
     pub pitch: f32,
     pub position: Vec3,
 }
+
+
 
 impl Transform {
     pub fn new() -> Transform{
@@ -39,6 +43,7 @@ impl Transform {
         return (ihat, jhat, khat);
     }
 
+
     fn get_inverse_basis_vectors(&self) -> (Vec3, Vec3, Vec3) {
         let (ihat, jhat, khat) = self.get_basis_vectors();
         return (
@@ -64,6 +69,5 @@ impl Transform {
     fn transform_vector(ihat: Vec3, jhat: Vec3, khat: Vec3, vector: Vec3) -> Vec3 {
         ihat * vector.x + jhat * vector.y + khat * vector.z
     }
-    
 }
 

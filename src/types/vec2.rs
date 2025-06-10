@@ -7,6 +7,7 @@ pub struct Vec2 {
 }
 
 
+
 #[macro_export]
 macro_rules! vec2 {
     ($x:expr, $y:expr) => {
@@ -14,6 +15,7 @@ macro_rules! vec2 {
     };
 }
 pub use crate::vec2;
+
 
 
 impl Add for Vec2 {
@@ -24,6 +26,8 @@ impl Add for Vec2 {
     }
 }
 
+
+
 impl Sub for Vec2 {
     type Output = Self;
 
@@ -31,6 +35,7 @@ impl Sub for Vec2 {
         vec2!(self.x - other.x, self.y - other.y)
     }
 }
+
 
 // component multiplication
 impl Mul for Vec2 {
@@ -41,6 +46,7 @@ impl Mul for Vec2 {
     }
 }
 
+
 // scalar multiplication
 impl Mul<f32> for Vec2 {
     type Output = Self;
@@ -49,6 +55,7 @@ impl Mul<f32> for Vec2 {
         vec2!(self.x * scalar, self.y * scalar)
     }
 }
+
 
 // scalar division
 impl Div<f32> for Vec2 {
@@ -59,6 +66,7 @@ impl Div<f32> for Vec2 {
     }
 }
 
+
 // component division
 impl Div for Vec2 {
     type Output = Self;
@@ -67,6 +75,7 @@ impl Div for Vec2 {
         vec2!(self.x / other.x, self.y / other.y)
     }
 }
+
 
 
 impl Vec2 {

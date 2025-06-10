@@ -7,6 +7,8 @@ pub struct RenderTarget {
     pub depth_buffer: Vec<f32>,
 }
 
+
+
 impl RenderTarget {
     pub fn new(width: u32, height: u32) -> Self {
         let size = (width * height) as usize;
@@ -16,11 +18,13 @@ impl RenderTarget {
         Self { width, height, size, color_buffer, depth_buffer: depth_puffer }
     }
 
+
     pub fn set_pixel(&mut self, x: u32, y: u32, color: u32) {
         let index = (y * self.width + x) as usize;
         self.color_buffer[index] = color;
     }
 
+    
     pub fn get_pixel(&self, x: u32, y: u32) -> u32 {
         if x >= self.width || y >= self.height {
             panic!(
@@ -29,8 +33,5 @@ impl RenderTarget {
             );
         }
         self.color_buffer[(y * self.width + x) as usize]
-    }
-    pub fn fill(&mut self, color: u32) {
-        self.color_buffer.fill(color);
     }
 }

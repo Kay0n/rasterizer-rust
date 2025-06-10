@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use config::*;
 use graphics::render_target::*;
-use graphics::renderer::*;
+use graphics::rasterizer::*;
 use graphics::camera::*;
 use graphics::scene::*;
 use types::model::*;
@@ -28,32 +28,24 @@ mod config;
 
 
 
-
-
-
 fn main() -> Result<()> {
-
 
     let mut cube = parse_obj("./models/Tori.obj");
     let mut monkey = parse_obj("./models/monkey.obj");
     
-    
     let mut scene = Scene::new();
-    let mut renderer = Renderer::new();
+    let mut renderer = Rasterizer::new();
 
     let mut render_target: RenderTarget = RenderTarget::new(WIDTH, HEIGHT);
-    let mut view = View::new(1920, 1080);
+    let mut view = View::new(1920, 1080); // window size, not render res
 
     let mut last_time = Instant::now();
-
 
     cube.transform.position.z = -20.0;
     monkey.transform.position.z = -5.0;
     scene.load_model(cube);
     scene.load_model(monkey);
     scene.camera.fov = 70.0;
-
-
 
     view.run(move |view| {
 
@@ -71,11 +63,8 @@ fn main() -> Result<()> {
         println!("Frame time: {} ms", elapsed.as_millis());
 
     });
-
-
+    
     return Ok(());
-
-
 }
 
 

@@ -1,10 +1,8 @@
-
-
 use crate::{graphics::camera::Camera, vec2, vec3, Model, RenderTarget, Scene, Transform, Vec2, Vec3};
 use std::simd::{f32x8, u32x8, Simd, Mask, prelude::SimdPartialEq, prelude::SimdPartialOrd};
 
 
-pub struct Renderer {
+pub struct Rasterizer {
     poly_buffer1: Vec<Vec3>,
     poly_buffer2: Vec<Vec3>,
     final_triangles: Vec<[Vec3; 3]>,
@@ -16,14 +14,15 @@ pub struct Renderer {
     cached_far: f32,
 }
 
-impl Renderer {
-    pub fn new() -> Renderer {
+
+impl Rasterizer {
+    pub fn new() -> Rasterizer {
         return Self {
             poly_buffer1: Vec::with_capacity(10),
             poly_buffer2: Vec::with_capacity(10),
             final_triangles: Vec::with_capacity(8),
 
-            // invalid values to force recalc
+            // invalid values to force recalc TODO: frustum caching
             frustum_planes: [Plane::new(); 6],
             cached_fov: -1.0, 
             cached_aspect: -1.0,
@@ -34,7 +33,6 @@ impl Renderer {
 
 
     pub fn render(&mut self, render_target: &mut RenderTarget, scene: &Scene){
-
         // clear buffers
         render_target.color_buffer.fill(0);
         render_target.depth_buffer.fill(f32::NEG_INFINITY);
@@ -75,9 +73,6 @@ impl Renderer {
                         let b = self.vertex_to_screen(triangle[1], render_target, &scene.camera);
                         let c = self.vertex_to_screen(triangle[2], render_target, &scene.camera);
 
-                        // // removes entire triangle if point is behind camera
-                        //if a.z >= 0.0 || b.z >= 0.0 || c.z >= 0.0 { continue; }
-
                         self.draw_triangle(render_target, a, b, c, model.colors[i / 3]);
                         num_tris += 1
                     }
@@ -100,13 +95,6 @@ impl Renderer {
         let vertex_screen = screen_center + pixel_offset;
         return vec3!(vertex_screen.x, vertex_screen.y, vertex_view.z)
     }
-
-
-
-
-
-
-
 
 
     fn draw_triangle(&self, fb: &mut RenderTarget, p1: Vec3, p2: Vec3, p3: Vec3, color: u32) {
@@ -234,26 +222,12 @@ impl Renderer {
         (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x)
     }
 
+
     #[inline]
     fn edge_simd(&self, ax: f32x8, ay: f32x8, bx: f32x8, by: f32x8, cx: f32x8, cy: f32x8) -> f32x8 {
         (cx - ax) * (by - ay) - (cy - ay) * (bx - ax)
     }
-    
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -262,6 +236,8 @@ struct Plane {
     normal: Vec3,
     d: f32,
 }
+
+
 
 impl Plane {
     pub fn new() -> Plane{
@@ -275,6 +251,8 @@ impl Plane {
         self.normal.dot(p) + self.d
     }
 }
+
+
 
 fn build_frustum_planes(fov: f32, aspect: f32, near: f32, far: f32) -> [Plane; 6] {
     let tan_half_fov = (fov.to_radians() / 2.0).tan();
@@ -290,6 +268,7 @@ fn build_frustum_planes(fov: f32, aspect: f32, near: f32, far: f32) -> [Plane; 6
         Plane { normal: vec3!(0.0, 1.0, -slope_y).normalize(), d: 0.0 },  // BOTTOM
     ]
 }
+
 
 
 fn clip_polygon_against_plane(input_poly: &[Vec3], output_poly: &mut Vec<Vec3>, plane: &Plane) {
@@ -324,6 +303,7 @@ fn clip_polygon_against_plane(input_poly: &[Vec3], output_poly: &mut Vec<Vec3>, 
         prev_dist = curr_dist;
     }
 }
+
 
 
 fn triangulate_convex_polygon(polygon: &[Vec3], triangles: &mut Vec<[Vec3; 3]>) {

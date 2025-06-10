@@ -14,8 +14,6 @@ use crate::{graphics::render_target::RenderTarget, types::vec2::Vec2};
 
 
 
-
-
 pub struct View {
     pub input: WinitInputHelper,
     pub window: Arc<Window>,
@@ -56,18 +54,22 @@ impl View {
         }
     }
 
+
     pub fn get_size(&self) -> (u32, u32) {
         let size = self.window.inner_size();
         return (size.width, size.height)
     }
 
+
     pub fn key_held(&self, key: KeyCode) -> bool{
         return self.input.key_held(key);
     }
 
+
     pub fn mouse_pressed(&self, button: MouseButton) -> bool{
         return self.input.mouse_pressed(button);
     }
+
 
     pub fn mouse_delta(&self) -> Vec2 {
         let (x, y) = self.input.mouse_diff();
@@ -90,6 +92,7 @@ impl View {
         let _ = self.window.set_cursor_grab(mode);
     }
 
+
     pub fn run<F>(mut self, mut frame_fn: F)
     where
         F: 'static + FnMut(&mut Self),
@@ -100,13 +103,10 @@ impl View {
         event_loop
             .run(move |event, elwt| {
                 if self.input.update(&event) {
-                    // if self.input.key_released(KeyCode::Escape)
-                    //     || self.input.close_requested()
-                    //     || self.input.destroyed()
-                    // {
-                    //     elwt.exit();
-                    //     return;
-                    // }
+                    if self.input.close_requested() || self.input.destroyed() {
+                        elwt.exit();
+                        return;
+                    }
 
                     self.handle_resize();
 
@@ -126,6 +126,7 @@ impl View {
             .unwrap();
     }
 
+
     fn handle_resize(&mut self) {
         let size = self.window.inner_size();
         self.width = size.width;
@@ -135,6 +136,7 @@ impl View {
             self.surface.resize(w, h).unwrap();
         }
     }
+
 
     pub fn draw(&mut self, target: &RenderTarget){
         let (win_width, win_height) = self.get_size();
@@ -155,6 +157,7 @@ impl View {
 
         window_buffer.present().unwrap();
     }
+    
 
     pub fn scale_buffer(
         dst_buf: &mut [u32],

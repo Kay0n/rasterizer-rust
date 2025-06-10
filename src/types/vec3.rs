@@ -10,6 +10,7 @@ pub struct Vec3 {
 }
 
 
+
 #[macro_export]
 macro_rules! vec3 {
     ($x:expr, $y:expr, $z:expr) => {
@@ -23,6 +24,7 @@ macro_rules! vec3 {
 pub use crate::vec3;
 
 
+
 impl Add for Vec3 {
     type Output = Self;
 
@@ -30,6 +32,7 @@ impl Add for Vec3 {
         vec3!(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 }
+
 
 
 impl Sub for Vec3 {
@@ -41,6 +44,7 @@ impl Sub for Vec3 {
 }
 
 
+
 impl Mul for Vec3 {
     type Output = Self;
 
@@ -48,6 +52,7 @@ impl Mul for Vec3 {
         vec3!(self.x * other.x, self.y * other.y, self.z * other.z)
     }
 }
+
 
 
 impl Mul<f32> for Vec3 {
@@ -59,6 +64,7 @@ impl Mul<f32> for Vec3 {
 }
 
 
+
 impl Div<f32> for Vec3 {
     type Output = Self;
 
@@ -68,6 +74,7 @@ impl Div<f32> for Vec3 {
 }
 
 
+
 impl Div for Vec3 {
     type Output = Self;
 
@@ -75,6 +82,9 @@ impl Div for Vec3 {
         vec3!(self.x / other.x, self.y / other.y, self.z / other.z)
     }
 }
+
+
+
 impl AddAssign for Vec3 {
     fn add_assign(&mut self, other: Vec3) {
         self.x += other.x;
@@ -82,6 +92,9 @@ impl AddAssign for Vec3 {
         self.z += other.z;
     }
 }
+
+
+
 impl SubAssign for Vec3 {
     fn sub_assign(&mut self, other: Vec3) {
         self.x -= other.x;
@@ -101,6 +114,7 @@ impl Vec3 {
         }
     }
 
+
     pub fn normalize(self) -> Self {
         let len = (self.x * self.x + self.y * self.y + self.z * self.z).sqrt();
         if len > 0.0 {
@@ -108,6 +122,8 @@ impl Vec3 {
         }
         self
     }
+
+    
     pub fn dot(self, other: Self) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
