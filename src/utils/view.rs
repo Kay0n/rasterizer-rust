@@ -81,7 +81,7 @@ impl View {
         let mode = if grab {
             self.window.set_cursor_visible(false);
             self.is_focused = true;
-            CursorGrabMode::Confined
+            CursorGrabMode::Locked
             
         } else {
             self.window.set_cursor_visible(true);

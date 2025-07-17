@@ -62,8 +62,11 @@ impl Scene {
         if view.key_held(KeyCode::KeyA) {camera_delta -= cam_right}
         if view.key_held(KeyCode::KeyS) {camera_delta += cam_fwd}
         if view.key_held(KeyCode::KeyD) {camera_delta+= cam_right}
+
+        let mut sprint = 1.0;
+        if view.key_held(KeyCode::ShiftLeft) {sprint *= 2.8}
     
-        self.camera.transform.position += camera_delta.normalize() * CAMERA_SPEED * delta_time;
+        self.camera.transform.position += camera_delta.normalize() * CAMERA_SPEED * delta_time * sprint;
     }
 }
 
