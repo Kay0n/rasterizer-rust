@@ -33,7 +33,7 @@ mod config;
 
 fn main() -> Result<()> {
 
-    let mut cube = parse_obj("./models/Tori.obj");
+    let mut cube = parse_obj("./models/monkey.obj");
     // let cube_texture = read_bitmap("./models/uv_grid.001.bmp").expect("Failed to read texture bitmap");
     // cube.shader = Box::new(TextureShader::new(cube_texture));
     // let mut monkey = parse_obj("./models/monkey.obj");
@@ -54,17 +54,13 @@ fn main() -> Result<()> {
     
 
     view.run(move |view| {
-        println!("frame start");
 
         let frame_start = Instant::now();
         let delta_time = (frame_start - last_time).as_secs_f32();
         last_time = frame_start;
         
-        println!("frame update");
         scene.update(delta_time, view);
-        println!("frame render");
         rasterizer.render(&mut render_target, &scene);
-        println!("frame draw");
         view.draw(&render_target);
 
         let elapsed = frame_start.elapsed();
